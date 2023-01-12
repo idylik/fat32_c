@@ -80,8 +80,7 @@ error_code get_cluster_chain_value(BPB *block,
  * @return 0 ou 1 (faux ou vrai)
  */
 bool file_has_name(FAT_entry *entry, char *name) {
-    //printf("file_has_name name: %s\n",name);
-    //printf("file_has_name strlen: %d\n",strlen(name));
+
     if (strlen(name) > 12) {return 0;}
 
     char temp[12];
@@ -297,8 +296,7 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
 
     //Mettre à la position du root
     fseek(archive, position_bytes, SEEK_SET);
-    //int count = 0;
-    //  Ex:  /spanish/los.txt
+
     for (int d=0; d<=max_depth;d++) {
 
         char *level_name;
@@ -336,11 +334,10 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
                 }
             }
 
-            //printf("-----\nDIR_Name: %s\n",(*entry)->DIR_Name);
-            //printf("DIR_Name length: %d\n", strlen((*entry)->DIR_Name));
+
             if ((*entry)->DIR_Name[0] == 0) {
                 //On est arrivés au bout du dossier et on n'a pas trouvé
-                //printf("on est arrives au bout\n");
+
                 free(level_name);
                 return -1;
             }
@@ -354,21 +351,19 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
              *              -fichier -> ERREUR (free level_name)
             */
 
-            //printf("level name: %s\n", level_name);
-            //printf("level name strlen: %d\n", strlen(level_name));
+
 
             //Si on trouve
             if (file_has_name(*entry,level_name)) {
-                //printf("on trouve\n");
+
 
                 bool est_dossier = ((*entry)->DIR_Attr & 0x10) != 0;
-                //printf("%X\n");
-                //printf("test dossier: %X\n", (*entry)->DIR_Attr & 0x10);
+
                 free(level_name);
 
                 //Si on est à la profondeur maximale:
                 if (d >= max_depth) {
-                    //printf("profondeur max\n");
+
                     if (est_dossier) {
                         return -1; //Erreur
                     } else {
@@ -378,10 +373,9 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
 
                 //Si pas à la profondeur maximale:
                 else {
-                    //printf("pas profondeur max\n");
+
                     if (est_dossier) { //CONTINUER
-                        //printf("est_dossier\n");
-                        //printf("");
+
                         uint32_t cluster_high = as_uint16((*entry)->DIR_FstClusHI);
                         uint32_t cluster_low = as_uint16((*entry)->DIR_FstClusLO);
 
@@ -392,14 +386,14 @@ error_code find_file_descriptor(FILE *archive, BPB *block, char *path, FAT_entry
                         //ATTENTION: si cluster est 0, c'est le root directory
                         if (cluster == 0) {cluster = as_uint32(block->BPB_RootClus);};
 
-                        //printf("nouveau cluster: %d\n",cluster);
+
                         position_bytes = cluster_to_lba(block, cluster, NULL) * (uint32_t)as_uint16(block->BPB_BytsPerSec);
-                        //printf("nouvelle position bytes: %d\n",position_bytes);
+
                         fseek(archive, position_bytes, SEEK_SET);
 
                         break;
                     } else { //Si fichier: Erreur
-                        //printf("pas dossier\n");
+
                         return -1;
                     }
                 }
@@ -430,10 +424,10 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
     }
 
     uint32_t bytes_per_cluster = as_uint16(block->BPB_BytsPerSec) * block->BPB_SecPerClus;
-    //printf("bytes_per_cluster: %d\n",bytes_per_cluster);
+
 
     size_t taille_fichier = as_uint32(entry->DIR_FileSize);
-    //printf("taille_fichier: %d\n",taille_fichier);
+
     uint32_t write_count = 0;
 
     uint32_t cluster_high = as_uint16(entry->DIR_FstClusHI);
@@ -441,11 +435,11 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
     uint32_t cluster = (cluster_high << 16) + cluster_low;
 
     cluster = cluster&0x0FFFFFFF; //Masque
-    //printf("cluster: %d\n",cluster);
+
 
     uint32_t position_bytes = cluster_to_lba(block, cluster, NULL) * (uint32_t)as_uint16(block->BPB_BytsPerSec);
     fseek(archive, position_bytes, SEEK_SET);
-    //printf("position bytes: %d\n",position_bytes);
+
 
 
     while(write_count < taille_fichier && write_count < max_len) {
@@ -454,7 +448,7 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
 
         //Si on est arrivé au bout d'un cluster, changer de cluster:
         if (write_count % bytes_per_cluster == 0) {
-            //printf("\n----------\n");
+
             //Trouver position en bytes du cluster actuel dans FAT table:
             uint32_t position_cluster_bytes = (as_uint16(block->BPB_RsvdSecCnt) + as_uint32(block->BPB_HiddSec))*bytes_per_cluster+cluster*4;
             fseek(archive, position_cluster_bytes, SEEK_SET);
@@ -467,7 +461,7 @@ read_file(FILE *archive, BPB *block, FAT_entry *entry, void *buff, size_t max_le
             }
             cluster = as_uint32(next);
             cluster = cluster&0x0FFFFFFF; //Masque
-            //printf("\n\nnext cluster:%d\n\n",cluster);
+
 
             position_bytes = cluster_to_lba(block, cluster, NULL) * (uint32_t)as_uint16(block->BPB_BytsPerSec);
             fseek(archive, position_bytes, SEEK_SET);
@@ -492,104 +486,16 @@ int main() {
 
     read_boot_block(archive, &block);
 
-    /*
-    printf("----\n");
-    printf("%d\n", as_uint32(block->BPB_RootClus));
-    printf("%d\n", as_uint16(block->BPB_ExtFlags));
-    printf("%d\n", block->BPB_Media);
-    printf("%s\n", block->BS_FilSysType);
-     */
-
-    //uint32_t lba_test = cluster_to_lba(block, 105, 0);
-
-    //printf("lba:  %d\n", lba_test);
-
-
-    //uint32_t prochain;
-
-    //get_cluster_chain_value(block, 3,&prochain, archive);
-    //printf("%X", prochain); //Si >= 268435448  -> dernier cluster d'une chaîne
-
-    /*
-    char temp[] = {'f','o','o','.','b','a','r','\0'};
-    char temp2[] = {'.','\0'};
-    char temp3[] = {'.','.','\0'};
-    char temp4[] = {'.','.','.','\0'};
-    char temp5[] = {'1','2','3','4','5','6','7','8','9','.','t','x','t','\0'};
-
-    //bool retour = file_has_name(NULL, temp);
-
-    //printf("%d\n", retour);
-    */
-
-    /*
-    char path[] = "dossier/dossier2/fichier.ext";
-    //printf("%d\n",strlen(path));
-    char *output;
-
-    int len = break_up_path(path, 1, &output);
-    printf("%s\n", output);
-    printf("length: %d\n",len);
-     */
 
     FAT_entry *entry;
-    //entry = malloc(sizeof(FAT_entry));
+
     char path[] = "spanish/los.txt";
-
-    //find_file_descriptor(archive, block, path, &fat_entry);
-
-    //Test fat_entry:
-    //uint32_t BytsPerSec = (uint32_t) as_uint16(block->BPB_BytsPerSec);
-    /*
-    uint32_t position_bytes = cluster_to_lba(block, as_uint32(block->BPB_RootClus), NULL) * (uint32_t)as_uint16(block->BPB_BytsPerSec);
-
-    //printf("position bytes: %d\n",position_bytes);
-    fseek(archive, position_bytes, SEEK_SET);
-
-    for (int i = 0; i < 32; i++) {
-        if (i < 11) {
-            //RAPPEL: mettre (*entry) dans la fonction
-            entry->DIR_Name[i] = getc(archive); //pas de \0
-        } else if (i < 12) {
-            entry->DIR_Attr = getc(archive);
-        } else if (i < 13) {
-            entry->DIR_NTRes = getc(archive);
-        } else if (i < 14) {
-            entry->DIR_CrtTimeTenth = getc(archive);
-        } else if (i < 16) {
-            entry->DIR_CrtTime[i-14] = getc(archive);
-        } else if (i < 18) {
-            entry->DIR_CrtDate[i-16] = getc(archive);
-        } else if (i < 20) {
-            entry->DIR_LstAccDate[i-18] = getc(archive);
-        } else if (i < 22) {
-            entry->DIR_FstClusHI[i-20] = getc(archive);
-        } else if (i < 24) {
-            entry->DIR_WrtTime[i-22] = getc(archive);
-        } else if (i < 26) {
-            entry->DIR_WrtDate[i-24] = getc(archive);
-        } else if (i < 28) {
-            entry->DIR_FstClusLO[i-26] = getc(archive);
-        } else {
-            entry->DIR_FileSize[i-28] = getc(archive);
-        }
-    }
-
-    uint32_t cluster_high = as_uint16(entry->DIR_FstClusHI);
-    uint32_t cluster_low = as_uint16(entry->DIR_FstClusLO);
-
-    uint32_t cluster = (cluster_high << 16) + cluster_low;
-    cluster = cluster&0x0FFFFFFF;
-
-    printf("cluster: %X\n",cluster);
-    */
 
     int code = find_file_descriptor(archive, block, path, &entry);
 
     printf("MAIN nom fichier: %s\n",entry->DIR_Name);
     printf("code sortie: %d\n",code);
 
-    //printf("%s\n", entry->DIR_Name);
 
     void *buff = malloc(2000*sizeof(char));
     memset(buff, '\0', sizeof(buff)); //nécessaire?
@@ -604,4 +510,3 @@ int main() {
     return 0;
 }
 
-// ༽つ۞﹏۞༼つ
