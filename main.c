@@ -53,7 +53,6 @@ error_code get_cluster_chain_value(BPB *block,
     if (archive == NULL) { return -1; }
     uint32_t fStart = as_uint16(block->BPB_RsvdSecCnt) + as_uint32(block->BPB_HiddSec); //secteurs réservés+cachés
 
-    // fStart * (Sector / Cluster) * (Byte / Sector)
     uint32_t cStart = ( fStart * (block->BPB_SecPerClus) * as_uint16(block->BPB_BytsPerSec) ) + cluster * 4;
 
     fseek(archive, cStart, SEEK_SET);
